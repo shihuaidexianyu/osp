@@ -156,6 +156,7 @@ async function runScanCommand(orchestrator: CliOrchestrator, config: PublisherCo
   const report = await orchestrator.scan(config);
 
   if (reporter.json) {
+    writeIssuesToLogger(reporter, report.issues, "scan");
     printJson(reporter, {
       command: "scan",
       success: true,
@@ -184,6 +185,7 @@ async function runBuildCommand(orchestrator: CliOrchestrator, config: PublisherC
   const result = await orchestrator.build(config);
 
   writeBuildLogsToLogger(reporter, result.logs);
+  writeIssuesToLogger(reporter, result.issues, "build");
 
   if (reporter.json) {
     printJson(reporter, {
@@ -238,6 +240,7 @@ async function runDeployCommand(
   const build = existingBuild ?? (await orchestrator.build(config));
 
   writeBuildLogsToLogger(reporter, build.logs);
+  writeIssuesToLogger(reporter, build.issues, "build");
 
   if (!build.success) {
     if (reporter.json) {
@@ -281,6 +284,8 @@ async function runPreviewFromBuild(
   if (!build.success || build.outputDir === undefined) {
     throw new Error("Cannot preview from an unavailable build result.");
   }
+
+  writeBuildLogsToLogger(reporter, build.logs);
 
   const port = previewPort ?? 8080;
   const server = await startStaticPreviewServer(build.outputDir, port);
@@ -343,6 +348,23 @@ function printBuildResult(reporter: CliReporter, result: BuildResult): void {
 function writeBuildLogsToLogger(reporter: CliReporter, logs: BuildLogEntry[]): void {
   for (const log of logs) {
     reporter.logger.entry(log.level === "warning" || log.level === "error" ? log.level : "info", `[build] ${log.message}`);
+  }
+}
+
+function writeIssuesToLogger(reporter: CliReporter, issues: BuildIssue[], scope: "scan" | "build"): void {
+  for (const issue of issues) {
+    reporter.logger.entry(mapIssueSeverityToLogLevel(issue.severity), `[${scope}] ${formatIssue(issue)}`);
+  }
+}
+
+function mapIssueSeverityToLogLevel(severity: BuildIssue["severity"]): "info" | "warning" | "error" {
+  switch (severity) {
+    case "info":
+      return "info";
+    case "warning":
+      return "warning";
+    case "error":
+      return "error";
   }
 }
 

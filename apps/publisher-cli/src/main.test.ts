@@ -135,7 +135,7 @@ describe("runCli", () => {
   it("starts preview and waits for shutdown signal hook", async () => {
     const output = createCapturedOutput();
     const runtime = createStubRuntime();
-    const waitForPreviewShutdown = vi.fn(async () => {});
+    const waitForPreviewShutdown = vi.fn(async () => { });
 
     const exitCode = await runCli(["preview", "--vault-root", "./vault"], {
       cwd: "c:\\workspace",
@@ -154,7 +154,7 @@ describe("runCli", () => {
     const cwd = await createTempDirectory();
     const output = createCapturedOutput();
     const runtime = createStubRuntime();
-    const waitForPreviewShutdown = vi.fn(async () => {});
+    const waitForPreviewShutdown = vi.fn(async () => { });
     const buildResultPath = path.join(cwd, "build-result.json");
     const outputDir = path.join(cwd, "dist");
 
@@ -173,6 +173,52 @@ describe("runCli", () => {
     expect(runtime.orchestrator.preview).not.toHaveBeenCalled();
     expect(waitForPreviewShutdown).toHaveBeenCalledOnce();
     expect(output.logs.join("\n")).toContain("Preview ready at http://127.0.0.1:8080");
+  });
+
+  it("writes reused build logs into the preview CLI log file when --build-result is provided", async () => {
+    const cwd = await createTempDirectory();
+    const output = createCapturedOutput();
+    const runtime = createStubRuntime();
+    const waitForPreviewShutdown = vi.fn(async () => { });
+    const buildResultPath = path.join(cwd, "build-result.json");
+    const outputDir = path.join(cwd, "dist");
+
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(path.join(outputDir, "index.html"), "<html><body>Preview</body></html>", "utf8");
+    await writeFile(
+      buildResultPath,
+      JSON.stringify(
+        createBuildResult({
+          outputDir,
+          logs: [
+            {
+              level: "info",
+              message: "Generating HTML pages...",
+              timestamp: "2026-03-18T11:11:13.000Z"
+            }
+          ]
+        }),
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    const exitCode = await runCli(["preview", "--vault-root", "./vault", "--build-result", buildResultPath, "--json"], {
+      cwd,
+      output,
+      createRuntime: () => runtime,
+      waitForPreviewShutdown
+    });
+
+    expect(exitCode).toBe(0);
+    expect(runtime.orchestrator.preview).not.toHaveBeenCalled();
+    expect(waitForPreviewShutdown).toHaveBeenCalledOnce();
+
+    const payload = JSON.parse(output.logs.at(-1) ?? "{}") as { logPath?: string };
+    const logContents = await readFile(payload.logPath ?? "", "utf8");
+
+    expect(logContents).toContain("[build] Generating HTML pages...");
   });
 
   it("prints machine-readable JSON when --json is used", async () => {
@@ -237,6 +283,60 @@ describe("runCli", () => {
     expect(logContents).toContain("WARNING");
   });
 
+  it("writes build issue details into the CLI log file in json mode when build is blocked", async () => {
+    const cwd = await createTempDirectory();
+    const vaultRoot = path.join(cwd, "vault");
+    const output = createCapturedOutput();
+    const runtime = createStubRuntime({
+      buildResult: {
+        success: false,
+        manifestPath: path.join(vaultRoot, ".osp", "manifest.json"),
+        outputDir: undefined,
+        logs: [
+          {
+            level: "warning",
+            message: "Cannot build while 2 error issue(s) remain unresolved.",
+            timestamp: "2026-03-25T07:27:27.122Z"
+          }
+        ],
+        issues: [
+          {
+            code: "BROKEN_LINK",
+            severity: "error",
+            file: "Broken.md",
+            message: "Link target does not exist.",
+            location: {
+              line: 3,
+              column: 7
+            }
+          },
+          {
+            code: "MISSING_ASSET",
+            severity: "error",
+            file: "Image.md",
+            message: "Referenced image is missing."
+          }
+        ],
+        durationMs: 9
+      }
+    });
+
+    const exitCode = await runCli(["build", "--vault-root", vaultRoot, "--json"], {
+      cwd,
+      output,
+      createRuntime: () => runtime
+    });
+
+    expect(exitCode).toBe(1);
+
+    const payload = JSON.parse(output.logs.at(-1) ?? "{}") as { logPath?: string };
+    const logContents = await readFile(payload.logPath ?? "", "utf8");
+
+    expect(logContents).toContain("[build] [error] BROKEN_LINK Broken.md:3:7 Link target does not exist.");
+    expect(logContents).toContain("[build] [error] MISSING_ASSET Image.md Referenced image is missing.");
+    expect(logContents).toContain("ERROR");
+  });
+
   it("passes Quartz builder options into the runtime factory", async () => {
     const output = createCapturedOutput();
     const runtime = createStubRuntime();
@@ -248,7 +348,7 @@ describe("runCli", () => {
         cwd: "c:\\workspace",
         output,
         createRuntime,
-        waitForPreviewShutdown: vi.fn(async () => {})
+        waitForPreviewShutdown: vi.fn(async () => { })
       }
     );
 
@@ -328,7 +428,7 @@ function createStubRuntime(options: {
       preview: vi.fn(async () => options.previewSession ?? createPreviewSession()),
       deployFromBuild: vi.fn(async () => options.deployResult ?? createDeployResult())
     },
-    stop: vi.fn(async () => {})
+    stop: vi.fn(async () => { })
   };
 }
 
