@@ -154,9 +154,12 @@ export async function runCli(argv: string[], runtime: CliRuntime = {}): Promise<
 
 async function runScanCommand(orchestrator: CliOrchestrator, config: PublisherConfig, reporter: CliReporter): Promise<number> {
   const report = await orchestrator.scan(config);
+  writeReadableDiagnosticsToLogger(reporter, {
+    issues: report.issues,
+    logs: []
+  });
 
   if (reporter.json) {
-    writeIssuesToLogger(reporter, report.issues, "scan");
     printJson(reporter, {
       command: "scan",
       success: true,
@@ -183,9 +186,10 @@ async function runScanCommand(orchestrator: CliOrchestrator, config: PublisherCo
 
 async function runBuildCommand(orchestrator: CliOrchestrator, config: PublisherConfig, reporter: CliReporter): Promise<number> {
   const result = await orchestrator.build(config);
-
-  writeBuildLogsToLogger(reporter, result.logs);
-  writeIssuesToLogger(reporter, result.issues, "build");
+  writeReadableDiagnosticsToLogger(reporter, {
+    issues: result.issues,
+    logs: result.logs
+  });
 
   if (reporter.json) {
     printJson(reporter, {
@@ -238,9 +242,10 @@ async function runDeployCommand(
   existingBuild: BuildResult | undefined
 ): Promise<number> {
   const build = existingBuild ?? (await orchestrator.build(config));
-
-  writeBuildLogsToLogger(reporter, build.logs);
-  writeIssuesToLogger(reporter, build.issues, "build");
+  writeReadableDiagnosticsToLogger(reporter, {
+    issues: build.issues,
+    logs: build.logs
+  });
 
   if (!build.success) {
     if (reporter.json) {
@@ -285,7 +290,10 @@ async function runPreviewFromBuild(
     throw new Error("Cannot preview from an unavailable build result.");
   }
 
-  writeBuildLogsToLogger(reporter, build.logs);
+  writeReadableDiagnosticsToLogger(reporter, {
+    issues: build.issues,
+    logs: build.logs
+  });
 
   const port = previewPort ?? 8080;
   const server = await startStaticPreviewServer(build.outputDir, port);
@@ -348,6 +356,60 @@ function printBuildResult(reporter: CliReporter, result: BuildResult): void {
 function writeBuildLogsToLogger(reporter: CliReporter, logs: BuildLogEntry[]): void {
   for (const log of logs) {
     reporter.logger.entry(log.level === "warning" || log.level === "error" ? log.level : "info", `[build] ${log.message}`);
+  }
+}
+
+function writeReadableDiagnosticsToLogger(reporter: CliReporter, input: {
+  issues: BuildIssue[];
+  logs: BuildLogEntry[];
+}): void {
+  const issueStatistics = createIssueSummary(input.issues);
+  reporter.logger.info(`Issue statistics: ${issueStatistics === "" ? "none" : issueStatistics}`);
+
+  const groupedEntries = {
+    error: [] as string[],
+    warning: [] as string[],
+    info: [] as string[]
+  };
+
+  for (const issue of input.issues) {
+    groupedEntries[mapIssueSeverityToLogLevel(issue.severity)].push(`[issue] ${formatIssue(issue)}`);
+  }
+
+  for (const log of input.logs) {
+    groupedEntries[mapBuildLogLevel(log.level)].push(`[build] ${log.message}`);
+  }
+
+  reporter.logger.info(
+    `Log level totals: ERROR=${groupedEntries.error.length}, WARNING=${groupedEntries.warning.length}, INFO=${groupedEntries.info.length}`
+  );
+
+  writeGroupedLogSection(reporter, "error", groupedEntries.error);
+  writeGroupedLogSection(reporter, "warning", groupedEntries.warning);
+  writeGroupedLogSection(reporter, "info", groupedEntries.info);
+}
+
+function writeGroupedLogSection(reporter: CliReporter, level: "error" | "warning" | "info", entries: string[]): void {
+  if (entries.length === 0) {
+    return;
+  }
+
+  reporter.logger.entry(level, `===== ${level.toUpperCase()} (${entries.length}) =====`);
+
+  for (const entry of entries) {
+    reporter.logger.entry(level, entry);
+  }
+}
+
+function mapBuildLogLevel(level: BuildLogEntry["level"]): "info" | "warning" | "error" {
+  switch (level) {
+    case "error":
+      return "error";
+    case "warning":
+      return "warning";
+    case "info":
+    case "debug":
+      return "info";
   }
 }
 

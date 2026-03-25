@@ -281,6 +281,10 @@ describe("runCli", () => {
     expect(logContents).toContain("[build] Quartz build finished.");
     expect(logContents).toContain("[build] Latex emitted a warning.");
     expect(logContents).toContain("WARNING");
+    expect(logContents).toContain("Issue statistics: none");
+    expect(logContents).toContain("Log level totals: ERROR=0, WARNING=1, INFO=1");
+    expect(logContents).toContain("===== WARNING (1) =====");
+    expect(logContents).toContain("===== INFO (1) =====");
   });
 
   it("writes build issue details into the CLI log file in json mode when build is blocked", async () => {
@@ -291,7 +295,6 @@ describe("runCli", () => {
       buildResult: {
         success: false,
         manifestPath: path.join(vaultRoot, ".osp", "manifest.json"),
-        outputDir: undefined,
         logs: [
           {
             level: "warning",
@@ -332,8 +335,12 @@ describe("runCli", () => {
     const payload = JSON.parse(output.logs.at(-1) ?? "{}") as { logPath?: string };
     const logContents = await readFile(payload.logPath ?? "", "utf8");
 
-    expect(logContents).toContain("[build] [error] BROKEN_LINK Broken.md:3:7 Link target does not exist.");
-    expect(logContents).toContain("[build] [error] MISSING_ASSET Image.md Referenced image is missing.");
+    expect(logContents).toContain("Issue statistics: BROKEN_LINK=1, MISSING_ASSET=1");
+    expect(logContents).toContain("Log level totals: ERROR=2, WARNING=1, INFO=0");
+    expect(logContents).toContain("===== ERROR (2) =====");
+    expect(logContents).toContain("===== WARNING (1) =====");
+    expect(logContents).toContain("[issue] [error] BROKEN_LINK Broken.md:3:7 Link target does not exist.");
+    expect(logContents).toContain("[issue] [error] MISSING_ASSET Image.md Referenced image is missing.");
     expect(logContents).toContain("ERROR");
   });
 
