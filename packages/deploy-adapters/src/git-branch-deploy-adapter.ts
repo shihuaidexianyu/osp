@@ -156,13 +156,11 @@ async function emptyDirectoryExceptGit(directoryPath: string): Promise<void> {
     withFileTypes: true
   });
 
-  await Promise.all(
-    entries
-      .filter((entry) => entry.name !== ".git")
-      .map(async (entry) => {
-        await rm(path.join(directoryPath, entry.name), { recursive: true, force: true });
-      })
-  );
+  for (const entry of entries) {
+    if (entry.name !== ".git") {
+      await rm(path.join(directoryPath, entry.name), { recursive: true, force: true });
+    }
+  }
 }
 
 async function copyDirectoryContents(sourceDir: string, destinationDir: string): Promise<void> {
@@ -195,5 +193,5 @@ function formatGitDeployError(error: unknown): string {
     return `Git branch deploy failed: ${error.message}`;
   }
 
-  return "Git branch deploy failed with an unknown error.";
+  return `Git branch deploy failed: ${String(error)}`;
 }

@@ -170,9 +170,9 @@ export class CliPluginBackend implements PluginExecutionBackend {
 
           previewResolved = true;
           resolve({
-            session: payload.session,
+            session: payload.session as PreviewSession,
             logPath: payload.logPath
-          });
+          }) as void;
         };
 
         stdoutStream.on("data", resolveIfReady);

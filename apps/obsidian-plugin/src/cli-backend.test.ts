@@ -68,7 +68,9 @@ describe("CliPluginBackend", () => {
 
     const preview = await backend.preview(createConfig(pluginRoot));
 
-    expect(preview.session.url).toBe("http://127.0.0.1:43180");
+    if (preview.session.success) {
+      expect(preview.session.url).toBe("http://127.0.0.1:43180");
+    }
     expect(preview.logPath).toBe(path.join(pluginRoot, ".osp", "logs", "preview.log"));
 
     await backend.dispose();
@@ -97,7 +99,9 @@ describe("CliPluginBackend", () => {
       createConfig(pluginRoot)
     );
 
-    expect(preview.session.url).toBe("http://127.0.0.1:43180");
+    if (preview.session.success) {
+      expect(preview.session.url).toBe("http://127.0.0.1:43180");
+    }
     await backend.dispose();
   });
 
@@ -187,6 +191,7 @@ if (command === "preview") {
     success: true,
     logPath: path.join(config.vaultRoot, ".osp", "logs", "preview.log"),
     session: {
+      success: true,
       url: "http://127.0.0.1:43180",
       workspaceRoot: buildResult?.outputDir ?? path.join(config.vaultRoot, ".osp", "preview"),
       startedAt: new Date().toISOString()

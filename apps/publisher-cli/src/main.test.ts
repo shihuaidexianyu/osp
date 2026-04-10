@@ -482,6 +482,7 @@ function createBuildResult(overrides: Partial<BuildResult> = {}): BuildResult {
 
 function createPreviewSession(): PreviewSession {
   return {
+    success: true as const,
     url: "http://localhost:8080",
     workspaceRoot: "/workspace",
     startedAt: new Date().toISOString()

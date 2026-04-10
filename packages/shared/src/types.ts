@@ -137,11 +137,18 @@ export type BuildResult = {
   durationMs: number;
 };
 
-export type PreviewSession = {
-  url: string;
-  workspaceRoot: string;
-  startedAt: string;
-};
+export type PreviewSession =
+  | {
+      success: true;
+      url: string;
+      workspaceRoot: string;
+      startedAt: string;
+    }
+  | {
+      success: false;
+      issues: BuildIssue[];
+      message: string;
+    };
 
 export type DeployResult = {
   success: boolean;
@@ -150,7 +157,7 @@ export type DeployResult = {
   message: string;
 };
 
-export type PublisherError = {
+export type PublisherError = Error & {
   code: string;
   message: string;
   cause?: unknown;

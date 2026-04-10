@@ -126,11 +126,19 @@ export const BuildResultSchema = z.object({
   durationMs: z.number().nonnegative()
 });
 
-export const PreviewSessionSchema = z.object({
-  url: z.string().url(),
-  workspaceRoot: z.string(),
-  startedAt: z.string()
-});
+export const PreviewSessionSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    url: z.string().url(),
+    workspaceRoot: z.string(),
+    startedAt: z.string()
+  }),
+  z.object({
+    success: z.literal(false),
+    issues: z.array(BuildIssueSchema),
+    message: z.string()
+  })
+]);
 
 export const DeployResultSchema = z.object({
   success: z.boolean(),

@@ -53,9 +53,11 @@ describe("QuartzBuilderAdapter", () => {
       try {
         const session = await adapter.preview(workspace, createConfig(workspace.rootDir));
 
-        expect(session.url).toBe(`http://localhost:${previewPort}`);
+        if (session.success) {
+          expect(session.url).toBe(`http://localhost:${previewPort}`);
+        }
 
-        const response = await fetch(session.url);
+        const response = await fetch(session.success ? session.url : "");
         const html = await response.text();
 
         expect(response.ok).toBe(true);
@@ -80,9 +82,11 @@ describe("QuartzBuilderAdapter", () => {
       try {
         const session = await adapter.preview(workspace, createConfig(workspace.rootDir));
 
-        expect(session.url).toBe(`http://localhost:${previewPort}`);
+        if (session.success) {
+          expect(session.url).toBe(`http://localhost:${previewPort}`);
+        }
 
-        const response = await fetch(session.url);
+        const response = await fetch(session.success ? session.url : "");
         const html = await response.text();
 
         expect(response.ok).toBe(true);

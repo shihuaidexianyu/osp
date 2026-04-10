@@ -21,7 +21,7 @@ afterEach(async () => {
 describe("FileSystemStagingService", () => {
   it("copies only published notes and their referenced assets into the staging workspace", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(vaultRoot, "Published.md", "---\npublish: true\n---\n![[assets/diagram.png]]\n");
     await writeVaultFile(vaultRoot, "Draft.md", "# Draft\n");
@@ -62,7 +62,7 @@ describe("FileSystemStagingService", () => {
 
   it("uses publishRoot when folder mode is active", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-folder-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-folder-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(vaultRoot, "Public/Guide.md", "# Guide\n");
     await writeVaultFile(vaultRoot, "Private/Draft.md", "# Draft\n");
@@ -88,7 +88,7 @@ describe("FileSystemStagingService", () => {
 
   it("respects includeGlobs and excludeGlobs when selecting notes to stage", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-glob-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-glob-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(vaultRoot, "Public/Keep.md", "# Keep\n");
     await writeVaultFile(vaultRoot, "Public/Drafts/Skip.md", "# Skip\n");
@@ -121,7 +121,7 @@ describe("FileSystemStagingService", () => {
 
   it("copies assets resolved through attachment folders and sibling .assets directories", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-assets-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-assets-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(vaultRoot, "Topic/Guide.md", "![[diagram.png]]\n");
     await writeVaultFile(vaultRoot, "Topic/assets/diagram.png", "fake-png");
@@ -162,7 +162,7 @@ describe("FileSystemStagingService", () => {
 
   it("generates a landing page when the published slice has no root index note", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-home-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-home-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(vaultRoot, "Guides/Start.md", "# Start\n");
     await writeVaultFile(vaultRoot, "Guides/Deep Dive.md", "# Deep Dive\n");
@@ -207,7 +207,7 @@ describe("FileSystemStagingService", () => {
 
   it("normalizes Obsidian-authored math wrappers without disturbing following mermaid fences", async () => {
     const vaultRoot = await createTempDirectory("osp-staging-markdown-vault-");
-    const stagingRoot = await createTempDirectory("osp-staging-markdown-root-");
+    const stagingRoot = path.join(vaultRoot, ".osp", "staging");
 
     await writeVaultFile(
       vaultRoot,

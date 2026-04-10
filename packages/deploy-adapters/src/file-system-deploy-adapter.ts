@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 
 import type { BuildResult, DeployResult, PublisherConfig } from "@osp/shared";
@@ -24,10 +24,13 @@ export class FileSystemDeployAdapter implements DeployAdapter {
     }
 
     const destination = resolveDeployDestination(config);
+    const stagingDestination = `${destination}.deploy-staging`;
 
+    await rm(stagingDestination, { recursive: true, force: true });
+    await mkdir(path.dirname(stagingDestination), { recursive: true });
+    await cp(build.outputDir, stagingDestination, { recursive: true });
     await rm(destination, { recursive: true, force: true });
-    await mkdir(path.dirname(destination), { recursive: true });
-    await cp(build.outputDir, destination, { recursive: true });
+    await rename(stagingDestination, destination);
 
     return {
       success: true,

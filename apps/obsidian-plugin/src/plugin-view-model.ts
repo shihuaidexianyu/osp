@@ -136,7 +136,7 @@ export function createControlPanelStatusItems(
     });
   }
 
-  if (state.lastPreviewSession !== undefined) {
+  if (state.lastPreviewSession !== undefined && state.lastPreviewSession.success) {
     items.push({
       label: "预览地址",
       value: state.lastPreviewSession.url

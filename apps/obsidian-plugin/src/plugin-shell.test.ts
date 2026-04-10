@@ -141,6 +141,7 @@ describe("PublisherPluginShell", () => {
     const firstBackend = createBackend({
       previewResult: {
         session: {
+          success: true as const,
           url: "http://localhost:8080",
           workspaceRoot: "/vault/.osp/preview-a",
           startedAt: new Date().toISOString()
@@ -150,6 +151,7 @@ describe("PublisherPluginShell", () => {
     const secondBackend = createBackend({
       previewResult: {
         session: {
+          success: true as const,
           url: "http://localhost:8081",
           workspaceRoot: "/vault/.osp/preview-b",
           startedAt: new Date().toISOString()
@@ -331,6 +333,7 @@ function createBuildResult(overrides: Partial<BuildResult> = {}): BuildResult {
 
 function createPreviewSession(): PreviewSession {
   return {
+    success: true as const,
     url: "http://localhost:8080",
     workspaceRoot: "/vault/.osp/preview",
     startedAt: new Date().toISOString()

@@ -8,10 +8,8 @@ export function createPublisherError(
     hint?: string;
   }
 ): PublisherError {
-  const error: PublisherError = {
-    code,
-    message,
-  };
+  const error = new Error(message) as PublisherError;
+  error.code = code;
 
   if (options?.cause !== undefined) {
     error.cause = options.cause;

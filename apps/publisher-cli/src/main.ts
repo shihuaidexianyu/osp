@@ -230,6 +230,11 @@ async function runPreviewCommand(
     printPreviewSession(reporter, session);
   }
 
+  if (!session.success) {
+    writeError(reporter, `Preview failed: ${session.message}`);
+    return 1;
+  }
+
   reporter.logger.info(`Preview active at ${session.url}`);
   await (waitForPreviewShutdown ?? waitForTerminationSignal)();
   return 0;
@@ -298,6 +303,7 @@ async function runPreviewFromBuild(
   const port = previewPort ?? 8080;
   const server = await startStaticPreviewServer(build.outputDir, port);
   const session: PreviewSession = {
+    success: true as const,
     url: `http://127.0.0.1:${port}`,
     workspaceRoot: build.outputDir,
     startedAt: new Date().toISOString()
@@ -431,6 +437,11 @@ function mapIssueSeverityToLogLevel(severity: BuildIssue["severity"]): "info" | 
 }
 
 function printPreviewSession(reporter: CliReporter, session: PreviewSession): void {
+  if (!session.success) {
+    writeInfo(reporter, `Preview failed: ${session.message}`);
+    return;
+  }
+
   writeInfo(reporter, `Preview ready at ${session.url}`);
   writeInfo(reporter, `Workspace: ${session.workspaceRoot}`);
   writeInfo(reporter, "Press Ctrl+C to stop preview.");

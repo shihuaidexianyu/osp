@@ -9,7 +9,13 @@ function normalizePlainTextSegment(markdownSource: string): string {
   return canonicalizeDisplayMathBlocks(normalizedBracketMath);
 }
 
+const PARENTHESIZED_MATH_LIMIT = 10_000;
+
 function normalizeParenthesizedDisplayMath(markdownSource: string): string {
+  if (markdownSource.length > PARENTHESIZED_MATH_LIMIT) {
+    return markdownSource;
+  }
+
   return markdownSource.replace(/([（(])\s*\$\$\s*([\s\S]*?)\s*\$\$\s*([)）])/gu, (match, leftParen, body, rightParen) => {
     if (!isMatchingParenPair(leftParen, rightParen)) {
       return match;

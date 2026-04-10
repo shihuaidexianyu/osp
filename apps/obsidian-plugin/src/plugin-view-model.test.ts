@@ -114,6 +114,7 @@ describe("plugin view model", () => {
       statusMessage: "站点预览已启动：http://localhost:8080",
       lastLogPath: "D:/vault/.osp/logs/preview.log",
       lastPreviewSession: {
+        success: true as const,
         url: "http://localhost:8080",
         workspaceRoot: "D:/vault/.osp/preview",
         startedAt: "2026-03-18T13:04:59.000Z"

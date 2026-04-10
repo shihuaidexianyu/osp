@@ -10,6 +10,11 @@ import { normalizeStagedMarkdown } from "./markdown-normalization.js";
 export class FileSystemStagingService implements StagingService {
   public async prepare(input: PrepareStagingInput): Promise<PreparedWorkspace> {
     const rootDir = input.stagingRoot ?? path.join(input.config.vaultRoot, ".osp", input.mode);
+
+    if (input.stagingRoot !== undefined && !isPathWithin(input.stagingRoot, input.config.vaultRoot)) {
+      throw new Error("Staging root must be within the vault directory.");
+    }
+
     const contentDir = path.join(rootDir, "content");
     const outputDir = path.join(rootDir, "dist");
     const manifestPath = path.join(rootDir, "manifest.json");
@@ -18,7 +23,7 @@ export class FileSystemStagingService implements StagingService {
     const generatedHomePage = createGeneratedHomePage(input.config.vaultRoot, publishedNotes);
     const stagedManifest = createStagedManifest(input.manifest, publishedNotes, referencedAssets, generatedHomePage?.note);
 
-    await rm(rootDir, { recursive: true, force: true });
+    await safeRemoveDirectory(rootDir);
     await mkdir(contentDir, { recursive: true });
     await mkdir(outputDir, { recursive: true });
     await copyVaultNotes(input.config.vaultRoot, contentDir, publishedNotes.map((note) => note.path));
@@ -140,6 +145,7 @@ async function writeGeneratedHomePage(
 
 async function copyVaultNotes(vaultRoot: string, targetRoot: string, relativePaths: string[]): Promise<void> {
   for (const relativePath of relativePaths) {
+    validateRelativePath(relativePath);
     const sourcePath = path.join(vaultRoot, relativePath);
     const destinationPath = path.join(targetRoot, relativePath);
     const markdownSource = await readFile(sourcePath, "utf8");
@@ -151,6 +157,7 @@ async function copyVaultNotes(vaultRoot: string, targetRoot: string, relativePat
 
 async function copyVaultFiles(vaultRoot: string, targetRoot: string, relativePaths: string[]): Promise<void> {
   for (const relativePath of relativePaths) {
+    validateRelativePath(relativePath);
     const sourcePath = path.join(vaultRoot, relativePath);
     const destinationPath = path.join(targetRoot, relativePath);
 
@@ -159,6 +166,23 @@ async function copyVaultFiles(vaultRoot: string, targetRoot: string, relativePat
   }
 }
 
-function normalizePath(targetPath: string): string {
-  return targetPath.replace(/\\/g, "/");
+function validateRelativePath(relativePath: string): void {
+  const normalized = path.normalize(relativePath);
+
+  if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
+    throw new Error(`Relative path escapes its base directory: ${relativePath}`);
+  }
+}
+
+function isPathWithin(candidatePath: string, parentPath: string): boolean {
+  const resolved = path.resolve(candidatePath);
+  const parent = path.resolve(parentPath);
+
+  return resolved.startsWith(parent + path.sep) || resolved === parent;
+}
+
+async function safeRemoveDirectory(dirPath: string): Promise<void> {
+  const resolved = path.resolve(dirPath);
+
+  await rm(resolved, { recursive: true, force: true });
 }

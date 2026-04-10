@@ -54,7 +54,15 @@ export class PublisherOrchestrator {
     const { manifest, issues } = await this.scan(config);
 
     if (shouldBlockAction(issues, config)) {
-      throw new Error(createBlockedActionMessage("preview", issues, config));
+      return createBlockedPreviewResult(issues, config);
+    }
+
+    if (this.dependencies.builder.preview === undefined) {
+      return {
+        success: false as const,
+        issues: [],
+        message: "Active builder adapter does not support preview."
+      };
     }
 
     const workspace = await this.dependencies.staging.prepare({
@@ -63,10 +71,6 @@ export class PublisherOrchestrator {
       mode: "preview"
     });
 
-    if (this.dependencies.builder.preview === undefined) {
-      throw new Error("Active builder adapter does not support preview.");
-    }
-
     return this.dependencies.builder.preview(workspace, config);
   }
 
@@ -74,6 +78,7 @@ export class PublisherOrchestrator {
     try {
       return await this.dependencies.deploy.deploy(build, config);
     } catch (error) {
+      console.error("[osp] Deploy failed:", error);
       return {
         success: false,
         target: config.deployTarget,
@@ -114,6 +119,17 @@ function createBlockedBuildResult(
   };
 }
 
+function createBlockedPreviewResult(
+  issues: BuildIssue[],
+  config: PublisherConfig
+): PreviewSession & { success: false } {
+  return {
+    success: false as const,
+    issues,
+    message: createBlockedActionMessage("preview", issues, config)
+  };
+}
+
 function createBlockedActionMessage(
   action: "build" | "preview",
   issues: BuildIssue[],
@@ -138,5 +154,5 @@ function formatDeployError(error: unknown): string {
     return error.message;
   }
 
-  return "Deploy failed with an unknown error.";
+  return `Deploy failed: ${String(error)}`;
 }

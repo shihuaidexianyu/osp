@@ -81,7 +81,32 @@ export async function resolveWorkspaceNodeModulesPath(quartzPackageRoot: string)
     path.resolve(quartzPackageRoot, "..", "..")
   ];
 
-  return resolveNodeModulesPath(candidatePaths, quartzPackageRoot);
+  const resolved = await resolveNodeModulesPath(candidatePaths, quartzPackageRoot);
+
+  // In pnpm strict mode, esbuild (a Quartz devDep) may not be available in the
+  // virtual store's shared node_modules. When that happens, fall back to the
+  // adapter package's own node_modules where esbuild is a direct dependency.
+  const hasEsbuild = await fileExists(path.join(resolved, "esbuild", "package.json"));
+
+  if (!hasEsbuild) {
+    const adapterNodeModules = path.resolve(import.meta.dirname, "..", "node_modules");
+    const adapterHasEsbuild = await fileExists(path.join(adapterNodeModules, "esbuild", "package.json"));
+
+    if (adapterHasEsbuild) {
+      return adapterNodeModules;
+    }
+  }
+
+  return resolved;
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function resolveQuartzPackageNodeModulesPath(quartzPackageRoot: string): Promise<string> {
@@ -281,7 +306,21 @@ export const defaultListPageLayout: PageLayout = {
 
 export async function readQuartzVersion(quartzPackageRoot: string): Promise<string> {
   const packageJsonPath = path.join(quartzPackageRoot, "package.json");
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as { version?: string };
 
-  return packageJson.version ?? "unknown";
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(packageJsonPath, "utf8"));
+  } catch (error: unknown) {
+    throw new Error(
+      `Failed to read Quartz package.json at ${packageJsonPath}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
+    return "unknown";
+  }
+
+  const version = (parsed as Record<string, unknown>).version;
+
+  return typeof version === "string" ? version : "unknown";
 }

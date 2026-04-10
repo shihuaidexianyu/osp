@@ -228,7 +228,9 @@ export class PublisherPluginShell {
     try {
       const preview = reusableBuild === undefined ? await backend.preview(config) : await backend.previewBuilt(reusableBuild, config);
       const session = preview.session;
-      const statusMessage = `站点预览已启动：${session.url}`;
+      const statusMessage = session.success
+        ? `站点预览已启动：${session.url}`
+        : `站点预览启动失败：${session.message}`;
 
       this.activePreviewBackend = backend;
       this.updateState({

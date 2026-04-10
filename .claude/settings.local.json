@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(corepack pnpm:*)",
+      "Bash(node -e ':*)",
+      "Bash(ls node_modules/.pnpm/@jackyzha0+quartz@*/node_modules/esbuild)",
+      "Bash(node -e \"const { createRequire } = require\\('module'\\); const req = createRequire\\(import.meta.url\\); console.log\\(req.resolve\\('@jackyzha0/quartz/package.json'\\)\\);\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(pnpm test:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

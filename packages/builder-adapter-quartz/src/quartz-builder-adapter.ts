@@ -116,6 +116,7 @@ export class QuartzBuilderAdapter implements BuilderAdapter {
       });
 
       return {
+        success: true as const,
         url: `http://localhost:${port}`,
         workspaceRoot: workspace.rootDir,
         startedAt: new Date().toISOString()
@@ -166,6 +167,7 @@ export class QuartzBuilderAdapter implements BuilderAdapter {
     });
 
     return {
+      success: true as const,
       url: `http://localhost:${port}`,
       workspaceRoot: workspace.rootDir,
       startedAt: new Date().toISOString()

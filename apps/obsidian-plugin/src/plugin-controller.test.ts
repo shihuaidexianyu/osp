@@ -175,6 +175,7 @@ function createCommandResult(command: PluginCommand, statusMessage: string): Plu
     return {
       command,
       session: {
+        success: true as const,
         url: "http://localhost:8080",
         workspaceRoot: "/vault/.osp/preview",
         startedAt: new Date().toISOString()

@@ -1,11 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
-import type { AssetRef, PublisherConfig, UnsupportedObjectRecord, VaultManifest, VaultSettings } from "@osp/shared";
+import { type AssetRef, normalizeVaultPath, type PublisherConfig, type UnsupportedObjectRecord, type VaultManifest, type VaultSettings } from "@osp/shared";
 
 import type { ScanInput, ScanResult, VaultParser } from "./contracts.js";
 import { parseFrontmatterFields } from "./frontmatter.js";
-import { analyzeMarkdownContent } from "./markdown-analysis.js";
+import { analyzeMarkdownContent, inferAssetKind as inferAssetKindFromMarkdown } from "./markdown-analysis.js";
 export class FileSystemVaultParser implements VaultParser {
   public async scanVault(input: ScanInput): Promise<ScanResult> {
     const scanState = createScanState(input.config);
@@ -72,7 +72,7 @@ async function scanDirectory(
     if (isAssetFile(relativePath)) {
       scanState.assetFiles.push({
         path: relativePath,
-        kind: inferAssetKind(relativePath)
+        kind: inferAssetKindFromMarkdown(relativePath)
       });
     }
   }
@@ -100,7 +100,7 @@ async function createNoteRecord(
     id: relativePath,
     path: relativePath,
     title: fileName,
-    slug: frontmatterFields.slug ?? createNoteSlug(relativePath),
+    slug: frontmatterFields.slug ?? stripMarkdownExtension(relativePath),
     aliases: frontmatterFields.aliases,
     headings: markdownAnalysis.headings,
     blockIds: markdownAnalysis.blockIds,
@@ -126,7 +126,7 @@ async function createNoteRecord(
   return noteRecord;
 }
 
-function createNoteSlug(relativePath: string): string {
+function stripMarkdownExtension(relativePath: string): string {
   return relativePath.replace(/\.md$/u, "");
 }
 
@@ -146,7 +146,7 @@ function createIgnoredRelativePrefixes(config: PublisherConfig): string[] {
     prefixes.push(relativeOutputPath);
   }
 
-  return prefixes.map(normalizePath);
+  return prefixes.map(normalizeVaultPath);
 }
 
 async function readVaultSettings(vaultRoot: string): Promise<VaultSettings | undefined> {
@@ -162,13 +162,17 @@ async function readVaultSettings(vaultRoot: string): Promise<VaultSettings | und
     return {
       attachmentFolderPath: parsed.attachmentFolderPath
     };
-  } catch {
-    return undefined;
+  } catch (error: unknown) {
+    if (error !== null && typeof error === "object" && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
   }
 }
 
 function toOptionalRelativeVaultPath(vaultRoot: string, targetPath: string): string | undefined {
-  const relativePath = normalizePath(path.relative(vaultRoot, targetPath));
+  const relativePath = normalizeVaultPath(path.relative(vaultRoot, targetPath));
 
   if (relativePath === "" || relativePath.startsWith("..")) {
     return undefined;
@@ -178,11 +182,7 @@ function toOptionalRelativeVaultPath(vaultRoot: string, targetPath: string): str
 }
 
 function toRelativeVaultPath(vaultRoot: string, targetPath: string): string {
-  return normalizePath(path.relative(vaultRoot, targetPath));
-}
-
-function normalizePath(filePath: string): string {
-  return filePath.replace(/\\/g, "/");
+  return normalizeVaultPath(path.relative(vaultRoot, targetPath));
 }
 
 function shouldIgnorePath(relativePath: string, ignoredPrefixes: string[]): boolean {
@@ -197,28 +197,18 @@ function isUnsupportedObject(relativePath: string): boolean {
   return relativePath.endsWith(".canvas") || relativePath.endsWith(".base");
 }
 
-function isAssetFile(relativePath: string): boolean {
-  return !isMarkdownFile(relativePath) && !isUnsupportedObject(relativePath);
-}
+const dangerousAssetExtensions = new Set([
+  ".env", ".exe", ".dll", ".so", ".bat", ".cmd", ".ps1", ".sh",
+  ".msi", ".com", ".scr", ".vbs", ".js", ".ts"
+]);
 
-function inferAssetKind(relativePath: string): AssetRef["kind"] {
+function isAssetFile(relativePath: string): boolean {
+  if (isMarkdownFile(relativePath) || isUnsupportedObject(relativePath)) {
+    return false;
+  }
+
   const extension = path.posix.extname(relativePath).toLowerCase();
 
-  if ([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".avif"].includes(extension)) {
-    return "image";
-  }
-
-  if ([".mp3", ".wav", ".ogg", ".m4a", ".flac"].includes(extension)) {
-    return "audio";
-  }
-
-  if ([".mp4", ".webm", ".mov", ".avi", ".mkv"].includes(extension)) {
-    return "video";
-  }
-
-  if (extension === ".pdf") {
-    return "pdf";
-  }
-
-  return "other";
+  return !dangerousAssetExtensions.has(extension);
 }
+

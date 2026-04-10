@@ -5,8 +5,13 @@ import { slugify } from "./slug.js";
 
 type MarkdownAnalysis = Pick<NoteRecord, "assets" | "blockIds" | "embeds" | "headings" | "links">;
 
-const wikilinkPattern = /(!)?\[\[([^[\]]+?)\]\]/g;
-const markdownLinkPattern = /(!)?\[[^\]]*?\]\(([^)]+)\)/g;
+function createWikilinkPattern(): RegExp {
+  return /(!)?\[\[([^[\]]+?)\]\]/g;
+}
+
+function createMarkdownLinkPattern(): RegExp {
+  return /(!)?\[[^\]]*?\]\(([^)]+)\)/g;
+}
 const codeFencePattern = /^\s*(?:>+\s*)?(?:(?:[-+*]|\d+\.)\s+)?(`{3,}|~{3,})/;
 const headingPattern = /^(#{1,6})[ \t]+(.+?)\s*$/;
 const trailingHeadingMarkerPattern = /\s+#+\s*$/;
@@ -29,6 +34,7 @@ export function analyzeMarkdownContent(markdownSource: string): MarkdownAnalysis
   const embeds: EmbedRef[] = [];
   const assets: AssetRef[] = [];
   const seenAssetPaths = new Set<string>();
+  const seenBlockIds = new Set<string>();
   let activeFenceMarker: string | undefined;
 
   for (const [index, line] of content.split(/\r?\n/).entries()) {
@@ -59,7 +65,8 @@ export function analyzeMarkdownContent(markdownSource: string): MarkdownAnalysis
 
     const blockId = extractBlockId(line);
 
-    if (blockId !== undefined && !blockIds.includes(blockId)) {
+    if (blockId !== undefined && !seenBlockIds.has(blockId)) {
+      seenBlockIds.add(blockId);
       blockIds.push(blockId);
     }
 
@@ -126,7 +133,7 @@ function collectWikilinks(
   assets: AssetRef[],
   seenAssetPaths: Set<string>
 ): void {
-  wikilinkPattern.lastIndex = 0;
+  const wikilinkPattern = createWikilinkPattern();
 
   for (const match of line.matchAll(wikilinkPattern)) {
     const isEmbed = match[1] === "!";
@@ -173,7 +180,7 @@ function collectMarkdownLinks(
   assets: AssetRef[],
   seenAssetPaths: Set<string>
 ): void {
-  markdownLinkPattern.lastIndex = 0;
+  const markdownLinkPattern = createMarkdownLinkPattern();
 
   for (const match of line.matchAll(markdownLinkPattern)) {
     const isEmbed = match[1] === "!";
@@ -316,7 +323,7 @@ function isAssetTarget(target: string): boolean {
   return knownBareAssetExtensions.has(extension);
 }
 
-function inferAssetKind(target: string): AssetRef["kind"] {
+export function inferAssetKind(target: string): AssetRef["kind"] {
   const extension = getTargetExtension(target);
 
   if ([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".avif"].includes(extension)) {

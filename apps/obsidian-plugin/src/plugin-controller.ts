@@ -55,7 +55,7 @@ export class PluginCommandController {
 
       stopProgress();
       this.host.setStatus(createStatusBarMessage(result));
-      if (result.command === "preview") {
+      if (result.command === "preview" && result.session.success) {
         this.host.openUrl(result.session.url);
       }
       this.host.showNotice(result.statusMessage);
