@@ -8,7 +8,9 @@ export function renderQuartzConfigTemplate(input: {
   locale: string;
   ignorePatterns: string;
   defaultDateType: string;
+  enableOgImages: boolean;
 }): string {
+  const ogImageEmitter = input.enableOgImages ? "      Plugin.OGImage(),\n" : "";
   return `import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 
@@ -90,7 +92,7 @@ const config: QuartzConfig = {
       }),
       Plugin.Assets(),
       Plugin.Static(),
-      Plugin.Favicon(),
+${ogImageEmitter}      Plugin.Favicon(),
       Plugin.NotFoundPage(),
     ],
   },

@@ -70,7 +70,8 @@ export class PublisherPluginShell implements PluginShellController {
       enableTableOfContents: true,
       enableRecentNotes: false,
       enableDarkmode: true,
-      enableReaderMode: true
+      enableReaderMode: true,
+      enableOgImages: false
     };
   }
 

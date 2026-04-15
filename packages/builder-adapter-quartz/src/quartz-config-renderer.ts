@@ -20,7 +20,8 @@ export function renderQuartzConfig(config: PublisherConfig): string {
     baseUrl,
     locale,
     ignorePatterns,
-    defaultDateType
+    defaultDateType,
+    enableOgImages: config.enableOgImages ?? false
   });
 }
 

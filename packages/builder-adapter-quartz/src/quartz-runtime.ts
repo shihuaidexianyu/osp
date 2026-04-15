@@ -32,6 +32,15 @@ export async function ensureQuartzWorkspaceRuntime(
   await ensureQuartzPackageNodeModulesLink(workspace.rootDir, quartzPackageNodeModulesPath);
   await writeFile(path.join(workspace.rootDir, "quartz.config.ts"), renderQuartzConfig(config), "utf8");
   await writeFile(path.join(workspace.rootDir, "quartz.layout.ts"), renderQuartzLayout(config), "utf8");
+
+  if (config.faviconPath !== undefined) {
+    const resolvedFaviconPath = path.isAbsolute(config.faviconPath)
+      ? config.faviconPath
+      : path.resolve(config.vaultRoot, config.faviconPath);
+    const quartzStaticDir = path.join(workspace.rootDir, "quartz", "static");
+    await mkdir(quartzStaticDir, { recursive: true });
+    await cp(resolvedFaviconPath, path.join(quartzStaticDir, "icon.png"), { force: true });
+  }
 }
 
 async function ensureQuartzWorkspaceGitBoundary(workspaceRoot: string): Promise<void> {

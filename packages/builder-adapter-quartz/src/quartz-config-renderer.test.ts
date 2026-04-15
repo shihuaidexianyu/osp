@@ -54,6 +54,26 @@ describe("quartz config renderer", () => {
     expect(output).toContain('locale: "en-US"');
     expect(output).toContain('ignorePatterns: [".obsidian"]');
     expect(output).toContain('defaultDateType: "modified"');
+    expect(output).not.toContain("Plugin.OGImage()");
+  });
+
+  it("includes OGImage emitter when enableOgImages is true", () => {
+    const output = renderQuartzConfig({
+      vaultRoot: "/vault",
+      publishMode: "frontmatter",
+      includeGlobs: [],
+      excludeGlobs: [],
+      outputDir: "/vault/.osp/dist",
+      builder: "quartz",
+      deployTarget: "none",
+      enableSearch: true,
+      enableBacklinks: true,
+      enableGraph: true,
+      strictMode: false,
+      enableOgImages: true
+    });
+
+    expect(output).toContain("Plugin.OGImage()");
   });
 });
 

@@ -115,7 +115,9 @@ export const PublisherConfigSchema = z.object({
   enableTableOfContents: z.boolean().optional(),
   enableRecentNotes: z.boolean().optional(),
   enableDarkmode: z.boolean().optional(),
-  enableReaderMode: z.boolean().optional()
+  enableReaderMode: z.boolean().optional(),
+  enableOgImages: z.boolean().optional(),
+  faviconPath: z.string().optional()
 });
 
 export const PreparedWorkspaceSchema = z.object({

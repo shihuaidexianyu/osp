@@ -127,6 +127,8 @@ export type PublisherConfig = {
   enableRecentNotes?: boolean;
   enableDarkmode?: boolean;
   enableReaderMode?: boolean;
+  enableOgImages?: boolean;
+  faviconPath?: string;
 };
 
 export type PreparedWorkspace = {
