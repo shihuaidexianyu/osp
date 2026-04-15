@@ -34,7 +34,8 @@ export function renderQuartzLayout(config: PublisherConfig): string {
     enableReaderMode: config.enableReaderMode ?? true,
     enableRecentNotes: config.enableRecentNotes ?? false,
     enableSearch: config.enableSearch,
-    enableTableOfContents: config.enableTableOfContents ?? true
+    enableTableOfContents: config.enableTableOfContents ?? true,
+    footerLinks: config.footerLinks ?? {}
   });
 }
 

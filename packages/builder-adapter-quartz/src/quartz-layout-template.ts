@@ -11,6 +11,7 @@ export function renderQuartzLayoutTemplate(input: {
   enableRecentNotes: boolean;
   enableSearch: boolean;
   enableTableOfContents: boolean;
+  footerLinks: Record<string, string>;
 }): string {
   const searchComponent = input.enableSearch
     ? `{
@@ -50,7 +51,7 @@ export const sharedPageComponents: SharedLayout = {
   header: [],
   afterBody: [],
   footer: Component.Footer({
-    links: {},
+    links: ${JSON.stringify(input.footerLinks)},
   }),
 }
 

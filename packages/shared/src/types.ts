@@ -129,6 +129,7 @@ export type PublisherConfig = {
   enableReaderMode?: boolean;
   enableOgImages?: boolean;
   faviconPath?: string;
+  footerLinks?: Record<string, string>;
 };
 
 export type PreparedWorkspace = {

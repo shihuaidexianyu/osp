@@ -71,7 +71,8 @@ export class PublisherPluginShell implements PluginShellController {
       enableRecentNotes: false,
       enableDarkmode: true,
       enableReaderMode: true,
-      enableOgImages: false
+      enableOgImages: false,
+      footerLinks: {}
     };
   }
 

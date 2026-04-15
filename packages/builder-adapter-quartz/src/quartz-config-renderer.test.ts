@@ -132,4 +132,17 @@ describe("quartz layout renderer", () => {
 
     expect(output).toContain("Component.RecentNotes()");
   });
+
+  it("renders footer links in the layout", () => {
+    const output = renderQuartzLayout({
+      ...baseConfig,
+      footerLinks: {
+        GitHub: "https://github.com/shihuaidexianyu",
+        Twitter: "https://twitter.com/example"
+      }
+    });
+
+    expect(output).toContain('"GitHub":"https://github.com/shihuaidexianyu"');
+    expect(output).toContain('"Twitter":"https://twitter.com/example"');
+  });
 });
