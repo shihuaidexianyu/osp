@@ -10,16 +10,30 @@ import { renderQuartzLayoutTemplate } from "./quartz-layout-template.js";
  */
 export function renderQuartzConfig(config: PublisherConfig): string {
   const pageTitle = JSON.stringify(path.basename(config.vaultRoot) || "Obsidian Site Publisher");
-  const baseUrl = JSON.stringify("localhost");
+  const baseUrl = JSON.stringify(resolveQuartzBaseUrl(config.siteBaseUrl));
+  const locale = JSON.stringify(config.locale ?? "en-US");
+  const ignorePatterns = JSON.stringify(config.ignorePatterns ?? [".obsidian"]);
+  const defaultDateType = JSON.stringify(config.defaultDateType ?? "modified");
 
-  return renderQuartzConfigTemplate(pageTitle, baseUrl);
+  return renderQuartzConfigTemplate({
+    pageTitle,
+    baseUrl,
+    locale,
+    ignorePatterns,
+    defaultDateType
+  });
 }
 
 export function renderQuartzLayout(config: PublisherConfig): string {
   return renderQuartzLayoutTemplate({
     enableBacklinks: config.enableBacklinks,
+    enableDarkmode: config.enableDarkmode ?? true,
+    enableExplorer: config.enableExplorer ?? true,
     enableGraph: config.enableGraph,
-    enableSearch: config.enableSearch
+    enableReaderMode: config.enableReaderMode ?? true,
+    enableRecentNotes: config.enableRecentNotes ?? false,
+    enableSearch: config.enableSearch,
+    enableTableOfContents: config.enableTableOfContents ?? true
   });
 }
 

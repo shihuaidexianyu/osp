@@ -118,6 +118,15 @@ export type PublisherConfig = {
   enableBacklinks: boolean;
   enableGraph: boolean;
   strictMode: boolean;
+  siteBaseUrl?: string;
+  locale?: string;
+  ignorePatterns?: string[];
+  defaultDateType?: "created" | "modified" | "published";
+  enableExplorer?: boolean;
+  enableTableOfContents?: boolean;
+  enableRecentNotes?: boolean;
+  enableDarkmode?: boolean;
+  enableReaderMode?: boolean;
 };
 
 export type PreparedWorkspace = {

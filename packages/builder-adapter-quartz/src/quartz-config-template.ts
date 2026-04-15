@@ -2,21 +2,27 @@
  * Generates the Quartz site config source file that will be written into the prepared workspace.
  * The template stays in a dedicated module so renderer logic and large static config text do not mix.
  */
-export function renderQuartzConfigTemplate(pageTitle: string, baseUrl: string): string {
+export function renderQuartzConfigTemplate(input: {
+  pageTitle: string;
+  baseUrl: string;
+  locale: string;
+  ignorePatterns: string;
+  defaultDateType: string;
+}): string {
   return `import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: ${pageTitle},
+    pageTitle: ${input.pageTitle},
     pageTitleSuffix: "",
     enableSPA: true,
     enablePopovers: true,
     analytics: null,
-    locale: "en-US",
-    baseUrl: ${baseUrl},
-    ignorePatterns: [".obsidian"],
-    defaultDateType: "modified",
+    locale: ${input.locale},
+    baseUrl: ${input.baseUrl},
+    ignorePatterns: ${input.ignorePatterns},
+    defaultDateType: ${input.defaultDateType},
     theme: {
       fontOrigin: "googleFonts",
       cdnCaching: true,

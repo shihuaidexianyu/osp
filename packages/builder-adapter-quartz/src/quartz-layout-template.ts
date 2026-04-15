@@ -1,11 +1,16 @@
 /**
  * Generates the Quartz layout source file for the prepared workspace.
- * Search, graph, and backlinks are toggled here so the renderer can stay focused on input normalization.
+ * Search, graph, backlinks, and additional page components are toggled here.
  */
 export function renderQuartzLayoutTemplate(input: {
   enableBacklinks: boolean;
+  enableDarkmode: boolean;
+  enableExplorer: boolean;
   enableGraph: boolean;
+  enableReaderMode: boolean;
+  enableRecentNotes: boolean;
   enableSearch: boolean;
+  enableTableOfContents: boolean;
 }): string {
   const searchComponent = input.enableSearch
     ? `{
@@ -21,8 +26,21 @@ export function renderQuartzLayoutTemplate(input: {
         },
         `
     : "";
+  const darkmodeComponent = input.enableDarkmode
+    ? `{ Component: Component.Darkmode() },`
+    : "";
+  const readerModeComponent = input.enableReaderMode
+    ? `{ Component: Component.ReaderMode() },`
+    : "";
   const graphComponent = input.enableGraph ? "    Component.Graph(),\n" : "";
+  const tocComponent = input.enableTableOfContents
+    ? "    Component.DesktopOnly(Component.TableOfContents()),\n"
+    : "";
   const backlinksComponent = input.enableBacklinks ? "    Component.Backlinks(),\n" : "";
+  const recentNotesComponent = input.enableRecentNotes
+    ? "    Component.RecentNotes(),\n"
+    : "";
+  const explorerComponent = input.enableExplorer ? "    Component.Explorer(),\n" : "";
 
   return `import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
@@ -51,15 +69,13 @@ export const defaultContentPageLayout: PageLayout = {
     Component.MobileOnly(Component.Spacer()),
     Component.Flex({
       components: [
-        ${searchComponent}{ Component: Component.Darkmode() },
-        { Component: Component.ReaderMode() },
+        ${searchComponent}${darkmodeComponent}
+        ${readerModeComponent}
       ],
     }),
-    Component.Explorer(),
-  ],
+${explorerComponent}  ],
   right: [
-${graphComponent}    Component.DesktopOnly(Component.TableOfContents()),
-${backlinksComponent}  ],
+${graphComponent}${tocComponent}${backlinksComponent}${recentNotesComponent}  ],
 }
 
 export const defaultListPageLayout: PageLayout = {
@@ -69,12 +85,12 @@ export const defaultListPageLayout: PageLayout = {
     Component.MobileOnly(Component.Spacer()),
     Component.Flex({
       components: [
-        ${listSearchComponent}{ Component: Component.Darkmode() },
+        ${listSearchComponent}${darkmodeComponent}
       ],
     }),
-    Component.Explorer(),
-  ],
-  right: [],
+${explorerComponent}  ],
+  right: [
+${recentNotesComponent}  ],
 }
 `;
 }

@@ -62,7 +62,15 @@ export class PublisherPluginShell implements PluginShellController {
       enableSearch: true,
       enableBacklinks: true,
       enableGraph: true,
-      strictMode: false
+      strictMode: false,
+      locale: "en-US",
+      ignorePatterns: [".obsidian"],
+      defaultDateType: "modified",
+      enableExplorer: true,
+      enableTableOfContents: true,
+      enableRecentNotes: false,
+      enableDarkmode: true,
+      enableReaderMode: true
     };
   }
 

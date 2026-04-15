@@ -106,7 +106,16 @@ export const PublisherConfigSchema = z.object({
   enableSearch: z.boolean(),
   enableBacklinks: z.boolean(),
   enableGraph: z.boolean(),
-  strictMode: z.boolean()
+  strictMode: z.boolean(),
+  siteBaseUrl: z.string().optional(),
+  locale: z.string().optional(),
+  ignorePatterns: z.array(z.string()).optional(),
+  defaultDateType: z.enum(["created", "modified", "published"]).optional(),
+  enableExplorer: z.boolean().optional(),
+  enableTableOfContents: z.boolean().optional(),
+  enableRecentNotes: z.boolean().optional(),
+  enableDarkmode: z.boolean().optional(),
+  enableReaderMode: z.boolean().optional()
 });
 
 export const PreparedWorkspaceSchema = z.object({
