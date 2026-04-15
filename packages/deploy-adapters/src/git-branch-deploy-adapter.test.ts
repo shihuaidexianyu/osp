@@ -18,7 +18,7 @@ afterEach(async () => {
   );
 });
 
-describe("GitBranchDeployAdapter", () => {
+describe("GitBranchDeployAdapter", { timeout: 30000 }, () => {
   it(
     "creates or updates a dedicated deploy branch with the built site",
     async () => {

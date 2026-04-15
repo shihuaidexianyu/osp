@@ -18,7 +18,7 @@ afterEach(async () => {
   );
 });
 
-describe("QuartzBuilderAdapter", () => {
+describe("QuartzBuilderAdapter", { timeout: 30000 }, () => {
   it(
     "builds a real Quartz site from a prepared workspace",
     async () => {

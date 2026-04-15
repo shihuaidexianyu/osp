@@ -1,8 +1,8 @@
-import type { BuildResult, DeployResult, PreviewSession, PublisherConfig, VaultManifest } from "@osp/shared";
 import { describe, expect, it, vi } from "vitest";
 
-import { PluginExecutionError, type PluginExecutionBackend } from "./plugin-backend.js";
+import { PluginExecutionError } from "./plugin-backend.js";
 import { PublisherPluginShell } from "./plugin-shell.js";
+import { createBackend, createConfig } from "./plugin-shell.test.helpers.js";
 
 describe("PublisherPluginShell", () => {
   it("exposes the four plugin commands with stable ids", () => {
@@ -29,7 +29,13 @@ describe("PublisherPluginShell", () => {
   it("runs the issues command through core scan and stores the latest issues", async () => {
     const backend = createBackend({
       scanResult: {
-        manifest: createManifest("/vault"),
+        manifest: {
+          generatedAt: new Date().toISOString(),
+          vaultRoot: "/vault",
+          notes: [],
+          assetFiles: [],
+          unsupportedObjects: []
+        },
         logPath: "/vault/.osp/logs/scan.log",
         issues: [
           {
@@ -63,15 +69,20 @@ describe("PublisherPluginShell", () => {
     const backend = createBackend({
       buildResult: {
         logPath: "/vault/.osp/logs/build.log",
-        result: createBuildResult({
+        result: {
+          success: true,
+          outputDir: "/vault/.osp/dist",
+          manifestPath: "/vault/.osp/build/manifest.json",
+          issues: [],
           logs: [
             {
               level: "info",
               message: "Quartz build finished.",
               timestamp: new Date().toISOString()
             }
-          ]
-        })
+          ],
+          durationMs: 1
+        }
       }
     });
     const plugin = new PublisherPluginShell(() => backend);
@@ -96,7 +107,12 @@ describe("PublisherPluginShell", () => {
     const backend = createBackend({
       previewResult: {
         logPath: "/vault/.osp/logs/preview.log",
-        session: createPreviewSession()
+        session: {
+          success: true as const,
+          url: "http://localhost:8080",
+          workspaceRoot: "/vault/.osp/preview",
+          startedAt: new Date().toISOString()
+        }
       }
     });
     const plugin = new PublisherPluginShell(() => backend);
@@ -119,13 +135,25 @@ describe("PublisherPluginShell", () => {
     const buildBackend = createBackend({
       buildResult: {
         logPath: "/vault/.osp/logs/build.log",
-        result: createBuildResult()
+        result: {
+          success: true,
+          outputDir: "/vault/.osp/dist",
+          manifestPath: "/vault/.osp/build/manifest.json",
+          issues: [],
+          logs: [],
+          durationMs: 1
+        }
       }
     });
     const previewBackend = createBackend({
       previewResult: {
         logPath: "/vault/.osp/logs/preview.log",
-        session: createPreviewSession()
+        session: {
+          success: true as const,
+          url: "http://localhost:8080",
+          workspaceRoot: "/vault/.osp/preview",
+          startedAt: new Date().toISOString()
+        }
       }
     });
     const plugin = new PublisherPluginShell(vi.fn().mockReturnValueOnce(buildBackend).mockReturnValueOnce(previewBackend));
@@ -196,8 +224,20 @@ describe("PublisherPluginShell", () => {
     const backend = createBackend({
       publishResult: {
         logPath: "/vault/.osp/logs/deploy.log",
-        build: createBuildResult(),
-        deploy: createDeployResult()
+        build: {
+          success: true,
+          outputDir: "/vault/.osp/dist",
+          manifestPath: "/vault/.osp/build/manifest.json",
+          issues: [],
+          logs: [],
+          durationMs: 1
+        },
+        deploy: {
+          success: true,
+          target: "none",
+          destination: "/vault/.osp/dist",
+          message: "Published."
+        }
       }
     });
     const plugin = new PublisherPluginShell(() => backend);
@@ -220,7 +260,14 @@ describe("PublisherPluginShell", () => {
     const buildBackend = createBackend({
       buildResult: {
         logPath: "/vault/.osp/logs/build.log",
-        result: createBuildResult()
+        result: {
+          success: true,
+          outputDir: "/vault/.osp/dist",
+          manifestPath: "/vault/.osp/build/manifest.json",
+          issues: [],
+          logs: [],
+          durationMs: 1
+        }
       }
     });
     const deployBackend = createBackend();
@@ -238,9 +285,14 @@ describe("PublisherPluginShell", () => {
     const backend = createBackend({
       publishResult: {
         logPath: "/vault/.osp/logs/deploy.log",
-        build: createBuildResult({
-          success: false
-        })
+        build: {
+          success: false,
+          outputDir: "/vault/.osp/dist",
+          manifestPath: "/vault/.osp/build/manifest.json",
+          issues: [],
+          logs: [],
+          durationMs: 1
+        }
       }
     });
     const plugin = new PublisherPluginShell(() => backend);
@@ -269,82 +321,3 @@ describe("PublisherPluginShell", () => {
     });
   });
 });
-
-function createBackend(options: {
-  scanResult?: { manifest: VaultManifest; issues: BuildResult["issues"]; logPath?: string };
-  buildResult?: { result: BuildResult; logPath?: string };
-  previewResult?: { session: PreviewSession; logPath?: string };
-  publishResult?: { build: BuildResult; deploy?: DeployResult; logPath?: string };
-} = {}): PluginExecutionBackend & { dispose: ReturnType<typeof vi.fn> } {
-  return {
-    scan: vi.fn(async () => options.scanResult ?? { manifest: createManifest("/vault"), issues: [] }),
-    build: vi.fn(async () => options.buildResult ?? { result: createBuildResult() }),
-    preview: vi.fn(async () => options.previewResult ?? { session: createPreviewSession() }),
-    previewBuilt: vi.fn(async () => options.previewResult ?? { session: createPreviewSession() }),
-    publish: vi.fn(async () => options.publishResult ?? {
-      build: createBuildResult(),
-      deploy: createDeployResult()
-    }),
-    deployBuilt: vi.fn(async () => ({
-      deploy: createDeployResult(),
-      logPath: "/vault/.osp/logs/deploy.log"
-    })),
-    dispose: vi.fn(async () => {})
-  };
-}
-
-function createConfig(vaultRoot: string): PublisherConfig {
-  return {
-    vaultRoot,
-    publishMode: "frontmatter",
-    includeGlobs: [],
-    excludeGlobs: [],
-    outputDir: `${vaultRoot}/.osp/dist`,
-    builder: "quartz",
-    deployTarget: "none",
-    enableSearch: true,
-    enableBacklinks: true,
-    enableGraph: true,
-    strictMode: false
-  };
-}
-
-function createManifest(vaultRoot: string): VaultManifest {
-  return {
-    generatedAt: new Date().toISOString(),
-    vaultRoot,
-    notes: [],
-    assetFiles: [],
-    unsupportedObjects: []
-  };
-}
-
-function createBuildResult(overrides: Partial<BuildResult> = {}): BuildResult {
-  return {
-    success: true,
-    outputDir: "/vault/.osp/dist",
-    manifestPath: "/vault/.osp/build/manifest.json",
-    issues: [],
-    logs: [],
-    durationMs: 1,
-    ...overrides
-  };
-}
-
-function createPreviewSession(): PreviewSession {
-  return {
-    success: true as const,
-    url: "http://localhost:8080",
-    workspaceRoot: "/vault/.osp/preview",
-    startedAt: new Date().toISOString()
-  };
-}
-
-function createDeployResult(): DeployResult {
-  return {
-    success: true,
-    target: "none",
-    destination: "/vault/.osp/dist",
-    message: "Published."
-  };
-}

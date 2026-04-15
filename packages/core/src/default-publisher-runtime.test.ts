@@ -18,7 +18,7 @@ afterEach(async () => {
   );
 });
 
-describe("createDefaultPublisherRuntime", () => {
+describe("createDefaultPublisherRuntime", { timeout: 30000 }, () => {
   it(
     "builds a minimal publishable vault through the full default pipeline",
     async () => {

@@ -78,7 +78,6 @@ export class PublisherOrchestrator {
     try {
       return await this.dependencies.deploy.deploy(build, config);
     } catch (error) {
-      console.error("[osp] Deploy failed:", error);
       return {
         success: false,
         target: config.deployTarget,

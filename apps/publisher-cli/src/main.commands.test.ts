@@ -1,11 +1,11 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import type { BuildResult, DeployResult, PreviewSession, PublisherConfig, VaultManifest } from "@osp/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { runCli } from "./main";
+import { createBuildResult, createCapturedOutput, createDeployResult, createPreviewSession, createStubRuntime } from "./main.test.helpers.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -17,18 +17,7 @@ afterEach(async () => {
   );
 });
 
-describe("runCli", () => {
-  it("prints help when no command is provided", async () => {
-    const output = createCapturedOutput();
-
-    const exitCode = await runCli([], {
-      output
-    });
-
-    expect(exitCode).toBe(0);
-    expect(output.logs.join("\n")).toContain("publisher-cli <scan|build|preview|deploy>");
-  });
-
+describe("runCli commands", () => {
   it("runs scan with default config resolved from --vault-root", async () => {
     const output = createCapturedOutput();
     const runtime = createStubRuntime();
@@ -47,51 +36,6 @@ describe("runCli", () => {
       })
     );
     expect(output.logs.join("\n")).toContain("Scan complete.");
-  });
-
-  it("merges partial config from osp.config.json", async () => {
-    const cwd = await createTempDirectory();
-    const output = createCapturedOutput();
-    const runtime = createStubRuntime();
-
-    await writeFile(
-      path.join(cwd, "osp.config.json"),
-      JSON.stringify(
-        {
-          publishMode: "folder",
-          publishRoot: "Public",
-          strictMode: true,
-          deployTarget: "local-export",
-          deployOutputDir: "./exports/site",
-          deployBranch: "site",
-          deployCommitMessage: "Publish from config"
-        },
-        null,
-        2
-      ),
-      "utf8"
-    );
-
-    const exitCode = await runCli(["scan"], {
-      cwd,
-      output,
-      createRuntime: () => runtime
-    });
-
-    expect(exitCode).toBe(0);
-    expect(runtime.orchestrator.scan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        vaultRoot: cwd,
-        publishMode: "folder",
-        publishRoot: "Public",
-        strictMode: true,
-        deployTarget: "local-export",
-        deployOutputDir: path.join(cwd, "exports", "site"),
-        deployBranch: "site",
-        deployCommitMessage: "Publish from config"
-      })
-    );
-    expect(output.logs.join("\n")).toContain("Using config");
   });
 
   it("returns exit code 1 when build fails", async () => {
@@ -344,28 +288,6 @@ describe("runCli", () => {
     expect(logContents).toContain("ERROR");
   });
 
-  it("passes Quartz builder options into the runtime factory", async () => {
-    const output = createCapturedOutput();
-    const runtime = createStubRuntime();
-    const createRuntime = vi.fn(() => runtime);
-
-    const exitCode = await runCli(
-      ["preview", "--vault-root", "./vault", "--static-preview", "--quartz-package-root", "./runtime/quartz"],
-      {
-        cwd: "c:\\workspace",
-        output,
-        createRuntime,
-        waitForPreviewShutdown: vi.fn(async () => { })
-      }
-    );
-
-    expect(exitCode).toBe(0);
-    expect(createRuntime).toHaveBeenCalledWith({
-      quartzPackageRoot: path.resolve("c:\\workspace", "runtime/quartz"),
-      preferStaticPreview: true
-    });
-  });
-
   it("deploys from an existing build when --build-result is provided", async () => {
     const cwd = await createTempDirectory();
     const output = createCapturedOutput();
@@ -384,136 +306,11 @@ describe("runCli", () => {
     expect(runtime.orchestrator.build).not.toHaveBeenCalled();
     expect(runtime.orchestrator.deployFromBuild).toHaveBeenCalledOnce();
   });
-
-  it("writes a bootstrap log when argument parsing fails", async () => {
-    const cwd = await createTempDirectory();
-    const output = createCapturedOutput();
-
-    const exitCode = await runCli(["scan", "--preview-port"], {
-      cwd,
-      output
-    });
-
-    expect(exitCode).toBe(1);
-    const logContents = await readLatestCliLog(path.join(cwd, ".osp", "logs"));
-
-    expect(logContents).toContain("Missing value for --preview-port.");
-    expect(logContents).toContain("CLI failed before command execution started.");
-  });
-
-  it("writes a bootstrap log when config resolution fails before the main reporter exists", async () => {
-    const cwd = await createTempDirectory();
-    const output = createCapturedOutput();
-
-    await writeFile(path.join(cwd, "publisher.config.json"), "{ not-valid-json", "utf8");
-
-    const exitCode = await runCli(["scan"], {
-      cwd,
-      output
-    });
-
-    expect(exitCode).toBe(1);
-    const logContents = await readLatestCliLog(path.join(cwd, ".osp", "logs"));
-
-    expect(logContents).toContain("CLI failed before the main reporter was initialized.");
-    expect(logContents).toContain("Expected property name or '}' in JSON");
-  });
 });
-
-function createStubRuntime(options: {
-  buildResult?: BuildResult;
-  previewSession?: PreviewSession;
-  deployResult?: DeployResult;
-} = {}) {
-  return {
-    orchestrator: {
-      scan: vi.fn(async (config: PublisherConfig) => ({
-        manifest: createManifest(config.vaultRoot),
-        issues: []
-      })),
-      build: vi.fn(async () => options.buildResult ?? createBuildResult()),
-      preview: vi.fn(async () => options.previewSession ?? createPreviewSession()),
-      deployFromBuild: vi.fn(async () => options.deployResult ?? createDeployResult())
-    },
-    stop: vi.fn(async () => { })
-  };
-}
-
-function createCapturedOutput() {
-  return {
-    logs: [] as string[],
-    errors: [] as string[],
-    log(message: string) {
-      this.logs.push(message);
-    },
-    error(message: string) {
-      this.errors.push(message);
-    }
-  };
-}
-
-function createManifest(vaultRoot: string): VaultManifest {
-  return {
-    generatedAt: new Date().toISOString(),
-    vaultRoot,
-    notes: [],
-    assetFiles: [],
-    unsupportedObjects: []
-  };
-}
-
-function createBuildResult(overrides: Partial<BuildResult> = {}): BuildResult {
-  return {
-    success: true,
-    outputDir: "/workspace/dist",
-    manifestPath: "/workspace/manifest.json",
-    issues: [],
-    logs: [
-      {
-        level: "info",
-        message: "Quartz build finished.",
-        timestamp: "2026-03-18T11:11:13.000Z"
-      }
-    ],
-    durationMs: 12,
-    ...overrides
-  };
-}
-
-function createPreviewSession(): PreviewSession {
-  return {
-    success: true as const,
-    url: "http://localhost:8080",
-    workspaceRoot: "/workspace",
-    startedAt: new Date().toISOString()
-  };
-}
-
-function createDeployResult(): DeployResult {
-  return {
-    success: true,
-    target: "none",
-    destination: "/workspace/dist",
-    message: "Deployed."
-  };
-}
 
 async function createTempDirectory(): Promise<string> {
   const directoryPath = await mkdtemp(path.join(os.tmpdir(), "osp-cli-"));
 
   temporaryDirectories.push(directoryPath);
   return directoryPath;
-}
-
-async function readLatestCliLog(logDirectory: string): Promise<string> {
-  const logFiles = (await readdir(logDirectory))
-    .filter((entry) => entry.endsWith(".log"))
-    .sort();
-  const latestLog = logFiles.at(-1);
-
-  if (latestLog === undefined) {
-    throw new Error(`No log file found in ${logDirectory}`);
-  }
-
-  return readFile(path.join(logDirectory, latestLog), "utf8");
 }

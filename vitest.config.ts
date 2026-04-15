@@ -15,6 +15,11 @@ export default defineConfig({
     }
   },
   test: {
-    include: ["packages/**/*.test.ts", "apps/**/*.test.ts"]
+    include: ["packages/**/*.test.ts", "apps/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      exclude: ["node_modules/", "dist/", "**/*.d.ts", "**/*.test.ts", "**/*.test.helpers.ts"]
+    }
   }
 });
