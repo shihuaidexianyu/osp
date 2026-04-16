@@ -21,7 +21,8 @@ export function renderQuartzConfig(config: PublisherConfig): string {
     locale,
     ignorePatterns,
     defaultDateType,
-    enableOgImages: config.enableOgImages ?? false
+    enableOgImages: config.enableOgImages ?? false,
+    linkResolution: JSON.stringify(config.linkResolution ?? "shortest")
   });
 }
 

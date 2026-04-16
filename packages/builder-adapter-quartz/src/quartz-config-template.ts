@@ -9,6 +9,7 @@ export function renderQuartzConfigTemplate(input: {
   ignorePatterns: string;
   defaultDateType: string;
   enableOgImages: boolean;
+  linkResolution: string;
 }): string {
   const ogImageEmitter = input.enableOgImages ? "      Plugin.OGImage(),\n" : "";
   return `import { QuartzConfig } from "./quartz/cfg"
@@ -75,7 +76,7 @@ const config: QuartzConfig = {
       Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false }),
       Plugin.GitHubFlavoredMarkdown(),
       Plugin.TableOfContents(),
-      Plugin.CrawlLinks({ markdownLinkResolution: "shortest" }),
+      Plugin.CrawlLinks({ markdownLinkResolution: ${input.linkResolution} }),
       Plugin.Description(),
       Plugin.Latex({ renderEngine: "katex" }),
     ],

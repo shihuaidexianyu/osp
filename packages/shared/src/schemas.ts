@@ -118,7 +118,8 @@ export const PublisherConfigSchema = z.object({
   enableReaderMode: z.boolean().optional(),
   enableOgImages: z.boolean().optional(),
   faviconPath: z.string().optional(),
-  footerLinks: z.record(z.string()).optional()
+  footerLinks: z.record(z.string()).optional(),
+  linkResolution: z.enum(["shortest", "absolute", "relative"]).optional()
 });
 
 export const PreparedWorkspaceSchema = z.object({

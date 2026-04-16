@@ -130,6 +130,7 @@ export type PublisherConfig = {
   enableOgImages?: boolean;
   faviconPath?: string;
   footerLinks?: Record<string, string>;
+  linkResolution?: "shortest" | "absolute" | "relative";
 };
 
 export type PreparedWorkspace = {

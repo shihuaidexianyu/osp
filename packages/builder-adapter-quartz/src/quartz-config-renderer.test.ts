@@ -55,6 +55,7 @@ describe("quartz config renderer", () => {
     expect(output).toContain('ignorePatterns: [".obsidian"]');
     expect(output).toContain('defaultDateType: "modified"');
     expect(output).not.toContain("Plugin.OGImage()");
+    expect(output).toContain('markdownLinkResolution: "shortest"');
   });
 
   it("includes OGImage emitter when enableOgImages is true", () => {
@@ -74,6 +75,25 @@ describe("quartz config renderer", () => {
     });
 
     expect(output).toContain("Plugin.OGImage()");
+  });
+
+  it("renders custom link resolution strategy", () => {
+    const output = renderQuartzConfig({
+      vaultRoot: "/vault",
+      publishMode: "frontmatter",
+      includeGlobs: [],
+      excludeGlobs: [],
+      outputDir: "/vault/.osp/dist",
+      builder: "quartz",
+      deployTarget: "none",
+      enableSearch: true,
+      enableBacklinks: true,
+      enableGraph: true,
+      strictMode: false,
+      linkResolution: "relative"
+    });
+
+    expect(output).toContain('markdownLinkResolution: "relative"');
   });
 });
 
